@@ -5,6 +5,8 @@ var User = require('../models/users');
 var router = express.Router();
 router.use(bodyParser.json());
 
+var getToken = require('../authenticate').getToken;
+
 module.exports.init = function(passport){
 
 /* GET users listing. */
@@ -54,10 +56,13 @@ router.post('/signup', (req, res, next) => {
   });
 });
 
-router.post('/login', passport.authenticate('local'), (req, res, next) => {
+router.post('/login', passport.authenticate('local', { session: false }), (req, res, next) => {
+  console.log("getting authentication token...");
+  var token = getToken({_id: req.user._id});
+  console.log("authentication token is: "+token);
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
-  res.json({success: true, status: 'You are successfully logged in!'});
+  res.json({success: true, token: token, status: 'You are successfully logged in!'});
 });
 
 

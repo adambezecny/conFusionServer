@@ -6,19 +6,23 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
-
 var passport = require('passport');
-
 require('./authenticate')(passport);
-
+var config = require('./config');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
-users.init(passport);
-
 var dishRouter = require('./routes/dishRouter');
 var leaderRouter = require('./routes/leaderRouter');
 var promotionRouter = require('./routes/promotionRouter');
+
+//init routers, pass initialized authentication objects 
+//to them so that they can verify authentication tokens
+//prior to allowing the user to access particular routes
+users.init(passport);
+dishRouter.init(passport);
+leaderRouter.init(passport);
+promotionRouter.init(passport);
 
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
@@ -26,7 +30,7 @@ mongoose.Promise = require('bluebird');
 const Dishes = require('./models/dishes');
 
 // Connection URL
-const url = 'mongodb://localhost:27017/conFusion';
+const url = config.mongoUrl;
 const connect = mongoose.connect(url, { });
 
 connect.then(
@@ -46,22 +50,26 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //app.use(cookieParser('12345-67890-09876-54321'));
-app.use(session({
+
+//not used any more with token based authentication
+/*app.use(session({
   name: 'session-id',
   secret: '12345-67890-09876-54321',
   saveUninitialized: false,
   resave: false,
   store: new FileStore()
-}));
+}));*/
 
 app.use(passport.initialize());
-app.use(passport.session());
-
+//not used any more with token based authentication
+//app.use(passport.session());
 
 
 app.use('/', index);
 app.use('/users', users.router);
 
+/*
+not authenticating all the routes, only selected ones!
 function auth (req, res, next) {
   console.log("checking session\n");
   console.log(req.session);
@@ -79,13 +87,14 @@ function auth (req, res, next) {
 }
 
 app.use(auth);
+*/
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-app.use('/dishes', dishRouter);
-app.use('/leaders', leaderRouter);
-app.use('/promotions', promotionRouter);
+app.use('/dishes', dishRouter.router);
+app.use('/leaders', leaderRouter.router);
+app.use('/promotions', promotionRouter.router);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
