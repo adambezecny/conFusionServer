@@ -26,32 +26,46 @@ router.post('/signup', (req, res, next) => {
     }
     else {
       
-      /*original:*/
-      passport.authenticate('local')(req, res, () => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json({success: true, status: 'Registration Successful!!!'});
-      });
+      if(req.body.firstname)
+        user.firstname = req.body.firstname;
 
-      /*this is in doc:
-      passport.authenticate('local', (err, user, info) => {
-        if (err) { return next(err); }
-        if (!user) { 
-          return next(new Error('Unable to retrieve user after signup!'));
-         }
-
-         req.logIn(user, (err) => {
-          if (err) { return next(err); }
-          console.log('Authentication after signup successfull');
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.json({success: true, status: 'Registration Successful!'});
-        });         
-
-      })(req, res, next);*/
+      if(req.body.lastname)
+        user.lastname = req.body.lastname;
       
-      
+        user.save((err, user) => {
 
+            if (err) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.json({err: err});
+              return ;
+            }          
+
+            /*original:*/
+            passport.authenticate('local')(req, res, () => {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.json({success: true, status: 'Registration Successful!!!'});
+            });
+
+            /*this is in doc:
+            passport.authenticate('local', (err, user, info) => {
+              if (err) { return next(err); }
+              if (!user) { 
+                return next(new Error('Unable to retrieve user after signup!'));
+              }
+
+              req.logIn(user, (err) => {
+                if (err) { return next(err); }
+                console.log('Authentication after signup successfull');
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json({success: true, status: 'Registration Successful!'});
+              });         
+
+            })(req, res, next);*/
+
+        });
     }
   });
 });
