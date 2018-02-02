@@ -5,6 +5,8 @@ const Dishes = require('../models/dishes');
 const dishhRouter = express.Router();
 const auth = require('../authenticate').customAuthentication;
 
+const cors = require('./cors');
+
 dishhRouter.use(bodyParser.json());
 
 module.exports.init = function(passport){
@@ -12,7 +14,8 @@ module.exports.init = function(passport){
     
 
     dishhRouter.route('/')
-    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
+    .options(cors.corsWithOptions, (req, res) => {res.sendStatus(200)})
+    .get(cors.cors, auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.find({})
         .populate('comments.author')
         .then((dishes) => {
@@ -22,7 +25,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
+    .post(cors.corsWithOptions, auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.create(req.body)
         .then((dish) => {
             console.log('Dish Created ', dish);
@@ -32,11 +35,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .put((req, res, next) => {
+    .put(cors.corsWithOptions, (req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /dishes');
     })
-    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
+    .delete(cors.corsWithOptions, auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.remove({})
         .then((resp) => {
             res.statusCode = 200;
@@ -59,7 +62,8 @@ module.exports.init = function(passport){
     });
     
     dishhRouter.route('/:dishId')
-    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
+    .options(cors.corsWithOptions, (req, res) => {res.sendStatus(200)})
+    .get(cors.cors, auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -69,11 +73,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post((req, res, next) => {
+    .post(cors.corsWithOptions, (req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /dishes/'+ req.dishId);
     })
-    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
+    .put(cors.corsWithOptions, auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.findByIdAndUpdate(req.dishId, {
             $set: req.body
         }, { new: true })
@@ -84,7 +88,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
+    .delete(cors.corsWithOptions, auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.findByIdAndRemove(req.dishId)
         .then((resp) => {
             res.statusCode = 200;
@@ -100,7 +104,8 @@ module.exports.init = function(passport){
     //
     
     dishhRouter.route('/:dishId/comments')
-    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
+    .options(cors.corsWithOptions, (req, res) => {res.sendStatus(200)})
+    .get(cors.cors, auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.params.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -117,7 +122,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(auth(passport, {"allowOrdinaryUser": "true"}), passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(cors.corsWithOptions, auth(passport, {"allowOrdinaryUser": "true"}), passport.authenticate('jwt', {session: false}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null) {
@@ -138,12 +143,12 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(cors.corsWithOptions, passport.authenticate('jwt', {session: false}), (req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /dishes/'
             + req.params.dishId + '/comments');
     })
-    .delete(auth(passport, {"allowAdminOnly": "true"}),  (req, res, next) => {
+    .delete(cors.corsWithOptions, auth(passport, {"allowAdminOnly": "true"}),  (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null) {
@@ -168,7 +173,8 @@ module.exports.init = function(passport){
     
     
     dishhRouter.route('/:dishId/comments/:commentId')
-    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
+    .options(cors.corsWithOptions, (req, res) => {res.sendStatus(200)})
+    .get(cors.cors, auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.params.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -190,12 +196,12 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post((req, res, next) => {
+    .post(cors.corsWithOptions, (req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /dishes/'+ req.params.dishId
             + '/comments/' + req.params.commentId);
     })
-    .put(auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
+    .put(cors.corsWithOptions, auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null && dish.comments.id(req.params.commentId) != null) {
@@ -225,7 +231,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
+    .delete(cors.corsWithOptions, auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null && dish.comments.id(req.params.commentId) != null) {

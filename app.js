@@ -45,9 +45,12 @@ var app = express();
 // Secure traffic only
 app.all('*', (req, res, next) => {
   if (req.secure) {
+    console.log('req is secure!');
+    console.log('https://' + req.hostname + ':' + req.protocol + ' '+ req.url);
     return next();
   }
   else {
+    console.log('redirecting request to https...');
     res.redirect(307, 'https://' + req.hostname + ':' + app.get('secPort') + req.url);
   }
 });
