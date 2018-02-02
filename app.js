@@ -15,6 +15,7 @@ var users = require('./routes/users');
 var dishRouter = require('./routes/dishRouter');
 var leaderRouter = require('./routes/leaderRouter');
 var promotionRouter = require('./routes/promotionRouter');
+var uploadRouter = require('./routes/uploadRouter');
 
 //init routers, pass initialized authentication objects 
 //to them so that they can verify authentication tokens
@@ -23,6 +24,7 @@ users.init(passport);
 dishRouter.init(passport);
 leaderRouter.init(passport);
 promotionRouter.init(passport);
+uploadRouter.init(passport);
 
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
@@ -78,34 +80,11 @@ app.use(passport.initialize());
 
 app.use('/', index);
 app.use('/users', users.router);
-
-/*
-not authenticating all the routes, only selected ones!
-function auth (req, res, next) {
-  console.log("checking session\n");
-  console.log(req.session);
-  console.log("user="+req.user);  
-
-  if (!req.user) {
-          var err = new Error('You are not authenticated!!!!');
-          res.setHeader('WWW-Authenticate', 'Basic');                        
-          err.status = 401;
-          next(err);
-          return;
-  } else {
-    next();
-  }
-}
-
-app.use(auth);
-*/
-
 app.use(express.static(path.join(__dirname, 'public')));
-
-
 app.use('/dishes', dishRouter.router);
 app.use('/leaders', leaderRouter.router);
 app.use('/promotions', promotionRouter.router);
+app.use('/imageUpload', uploadRouter.router);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

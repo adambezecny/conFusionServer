@@ -143,7 +143,7 @@ module.exports.init = function(passport){
         res.end('PUT operation not supported on /dishes/'
             + req.params.dishId + '/comments');
     })
-    .delete(auth(passport, {"allowAdminOnly": "true"}), passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}),  (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null) {
