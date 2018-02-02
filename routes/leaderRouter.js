@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Leaders = require('../models/leaders');
+const auth = require('../authenticate').customAuthentication;
 
 const leaderRouter = express.Router();
 
@@ -10,7 +11,7 @@ leaderRouter.use(bodyParser.json());
 module.exports.init = function(passport){
 
     leaderRouter.route('/')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Leaders.find({})
         .then((leaders) => {
             res.statusCode = 200;
@@ -19,7 +20,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Leaders.create(req.body)
         .then((leader) => {
             console.log('Leader Created ', leader);
@@ -29,11 +30,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /leaders');
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Leaders.remove({})
         .then((resp) => {
             res.statusCode = 200;
@@ -56,7 +57,7 @@ module.exports.init = function(passport){
     });
     
     leaderRouter.route('/:leaderId')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Leaders.findById(req.leaderId)
         .then((leader) => {
             res.statusCode = 200;
@@ -65,11 +66,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /leaders/'+ req.leaderId);
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Leaders.findByIdAndUpdate(req.leaderId, {
             $set: req.body
         }, { new: true })
@@ -80,7 +81,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Leaders.findByIdAndRemove(req.leaderId)
         .then((resp) => {
             res.statusCode = 200;

@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Dishes = require('../models/dishes');
 const dishhRouter = express.Router();
-
+const auth = require('../authenticate').customAuthentication;
 
 dishhRouter.use(bodyParser.json());
 
@@ -12,7 +12,7 @@ module.exports.init = function(passport){
     
 
     dishhRouter.route('/')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.find({})
         .populate('comments.author')
         .then((dishes) => {
@@ -22,7 +22,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.create(req.body)
         .then((dish) => {
             console.log('Dish Created ', dish);
@@ -32,11 +32,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put((req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /dishes');
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.remove({})
         .then((resp) => {
             res.statusCode = 200;
@@ -59,7 +59,7 @@ module.exports.init = function(passport){
     });
     
     dishhRouter.route('/:dishId')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -69,11 +69,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post((req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /dishes/'+ req.dishId);
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.findByIdAndUpdate(req.dishId, {
             $set: req.body
         }, { new: true })
@@ -84,7 +84,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Dishes.findByIdAndRemove(req.dishId)
         .then((resp) => {
             res.statusCode = 200;
@@ -100,7 +100,7 @@ module.exports.init = function(passport){
     //
     
     dishhRouter.route('/:dishId/comments')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.params.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -117,7 +117,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowOrdinaryUser": "true"}), passport.authenticate('jwt', {session: false}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null) {
@@ -143,7 +143,7 @@ module.exports.init = function(passport){
         res.end('PUT operation not supported on /dishes/'
             + req.params.dishId + '/comments');
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), passport.authenticate('jwt', {session: false}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null) {
@@ -168,7 +168,7 @@ module.exports.init = function(passport){
     
     
     dishhRouter.route('/:dishId/comments/:commentId')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Dishes.findById(req.params.dishId)
         .populate('comments.author')
         .then((dish) => {
@@ -190,12 +190,12 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post((req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /dishes/'+ req.params.dishId
             + '/comments/' + req.params.commentId);
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null && dish.comments.id(req.params.commentId) != null) {
@@ -225,7 +225,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowOrdinaryUser": "true", "checkCommentAccess": "true"}), (req, res, next) => {
         Dishes.findById(req.params.dishId)
         .then((dish) => {
             if (dish != null && dish.comments.id(req.params.commentId) != null) {

@@ -6,12 +6,19 @@ var router = express.Router();
 router.use(bodyParser.json());
 
 var getToken = require('../authenticate').getToken;
+const auth = require('../authenticate').customAuthentication;
 
 module.exports.init = function(passport){
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get('/', auth(passport, {"allowAdminOnly": "true"}), function(req, res, next) {
+  User.find({})
+  .then((users) => {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.json(users);
+  }, (err) => next(err))
+  .catch((err) => next(err));
 });
 
 

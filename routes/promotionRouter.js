@@ -2,15 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Promotions = require('../models/promotions');
-
+const auth = require('../authenticate').customAuthentication;
 const promotionRouter = express.Router();
-
 promotionRouter.use(bodyParser.json());
 
 module.exports.init = function(passport){
 
     promotionRouter.route('/')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Promotions.find({})
         .then((promotions) => {
             res.statusCode = 200;
@@ -19,7 +18,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Promotions.create(req.body)
         .then((promotion) => {
             console.log('Promotion Created ', promotion);
@@ -29,11 +28,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /promotions');
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Promotions.remove({})
         .then((resp) => {
             res.statusCode = 200;
@@ -56,7 +55,7 @@ module.exports.init = function(passport){
     });
     
     promotionRouter.route('/:promotionId')
-    .get((req,res,next) => {
+    .get(auth(passport, {"allowAnonymous": "true"}), (req,res,next) => {
         Promotions.findById(req.promotionId)
         .then((promotion) => {
             res.statusCode = 200;
@@ -65,11 +64,11 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .post(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .post(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         res.statusCode = 403;
         res.end('POST operation not supported on /promotions/'+ req.promotionId);
     })
-    .put(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .put(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Promotions.findByIdAndUpdate(req.promotionId, {
             $set: req.body
         }, { new: true })
@@ -80,7 +79,7 @@ module.exports.init = function(passport){
         }, (err) => next(err))
         .catch((err) => next(err));
     })
-    .delete(passport.authenticate('jwt', {session: false}), (req, res, next) => {
+    .delete(auth(passport, {"allowAdminOnly": "true"}), (req, res, next) => {
         Promotions.findByIdAndRemove(req.promotionId)
         .then((resp) => {
             res.statusCode = 200;

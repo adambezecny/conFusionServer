@@ -1,11 +1,10 @@
 var LocalStrategy = require('passport-local').Strategy;
 var User = require('./models/users');
-
 var JwtStrategy = require('passport-jwt').Strategy;
 var ExtractJwt = require('passport-jwt').ExtractJwt;
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
-
 var config = require('./config.js');
+const Dishes = require('./models/dishes');
 
 module.exports = function(passport){
     //local strategy is used by users.js router only
@@ -61,4 +60,61 @@ module.exports.getToken = function(user) {
         config.secretKey,  
         {expiresIn: 3600}
     );
-};
+}
+
+module.exports.customAuthentication = function(passport, options) {
+    
+    return function(req, res, next){
+        
+        if(options.allowAnonymous == 'true'){
+            console.log('allowing anonymous access to route');
+            next();
+        }else{
+
+            passport.authenticate('jwt', {session: false}, (err, user, info) => {
+
+                console.log('performing custom authentication callback...');
+
+                if (err)  
+                    return next(err); 
+                
+                if (!user)  
+                    return next(new Error('User does not exist!')); 
+                
+                if(options.allowAdminOnly == 'true')
+                    if(user.admin == false)
+                        return next(new Error('User is not admin!')); 
+                
+                if(options.checkCommentAccess == 'true'){
+                    console.log('checking rights to modify comment...');
+                    var reqCommentId = req.params.commentId;
+                    var reqDishId    = req.params.dishId;
+                    var userId       = user.id;
+
+                    Dishes.findById(reqDishId)
+                    .then((dish) => {
+                        var objComment = dish.comments.id(reqCommentId);
+                        var commentAuthor = objComment.author;
+                        console.log('commentAuthor='+commentAuthor.toString()+' user performing action='+user);
+                        if(commentAuthor.toString() != user.id){
+                             console.log("User not an owner of modified comment!");   
+                             return next(new Error("User not an owner of modified comment!"));   
+                        }else{
+                            console.log("User is an owner of modified comment, allowing modification");   
+                            next();
+                        }
+
+                    }, (err) => next(err))
+                    .catch((err) => next(err));         
+                                   
+
+                }else{
+                    console.log('all good here...');
+                    next();//all good, user is authenticated at this point!
+                }
+
+            })(req, res, next);
+        }
+    }
+
+}
